@@ -1,8 +1,10 @@
-@[if os_name == 'ubuntu' and arch in ['i386', 'armhf']]@
+@[if os_name in ['ubuntu', 'debian'] and arch in ['i386', 'armhf', 'arm64']]@
 @[if arch == 'i386']@
-FROM osrf/ubuntu_32bit:@os_code_name
-@[else]@
-FROM osrf/ubuntu_armhf:@os_code_name
+FROM i386/@os_name:@os_code_name
+@[else if arch == 'armhf']@
+FROM armhf/@os_name:@os_code_name
+@[else if arch == 'arm64']@
+FROM aarch64/@os_name:@os_code_name
 @[end if]@
 @[else]@
 FROM @os_name:@os_code_name
