@@ -3,7 +3,7 @@
 FROM i386/@os_name:@os_code_name
 @[else if arch == 'armhf']@
 FROM armhf/@os_name:@os_code_name
-@[else if arch == 'arm64']@
+@[else]@
 FROM aarch64/@os_name:@os_code_name
 @[end if]@
 @[else]@
