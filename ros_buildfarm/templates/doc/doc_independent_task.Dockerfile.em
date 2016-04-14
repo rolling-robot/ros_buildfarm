@@ -33,7 +33,6 @@ RUN useradd -u @uid -m buildfarm
 RUN echo "@today_str"
 
 RUN python3 -u /tmp/wrapper_scripts/apt-get.py update-and-install -q -y make python-catkin-pkg python-dateutil python-pip python-wstool python-yaml
-RUN pip install -U catkin-sphinx sphinx
 
 USER buildfarm
 
