@@ -33,7 +33,7 @@ RUN useradd -u @uid -m buildfarm
 RUN echo "@today_str"
 
 RUN python3 -u /tmp/wrapper_scripts/apt-get.py update-and-install -q -y make python-catkin-pkg python-dateutil python-pip python-wstool python-yaml
-RUN for i in 1 2 3; do apt-get update && apt-get install -q -y python3-sphinx && break || sleep 5; done
+RUN for i in 1 2 3; do apt-get update && apt-get install -q -y python3-sphinx python3-yaml && break || sleep 5; done
 USER buildfarm
 
 ENTRYPOINT ["sh", "-c"]
