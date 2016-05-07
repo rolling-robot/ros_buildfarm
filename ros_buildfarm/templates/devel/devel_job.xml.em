@@ -211,6 +211,45 @@ if pull_request:
         'echo "# END SECTION"',
     ]),
 ))@
+@[if abi_compliance_checker]
+@(SNIPPET(
+    'builder_shell'
+    script = '\n'.join(
+        'echo "# BEGIN SECTION: Set up ABI dumper and ABI checker"',
+        'git clone git://github.com/lvc/abi-compliance-checker.git $WORKSPACE/abi-compliance-checker"',
+        'cd $WORKSPACE/abi-compliance-checker"',
+        # TODO Install prefix... have to make directory?
+        # TODO Installing the dependencies for the ABI checker?
+        'perl Makefile.pl -install --prefix=$WORKSPACE/abi"',
+        'git clone git://github.com/lvc/abi-dumper.git $WORKSPACE/abi-dumper"',
+        'cd $WORKSPACE/abi-dumper"',
+        'perl Makefile.pl -install --prefix=$WORKSPACE/abi"',
+        'echo "# END SECTION"',
+    ]),
+))@
+@(SNIPPET(
+    'builder_shell'
+    script = '\n'.join(
+        'echo "# BEGIN SECTION: Get ABI dump of current version"',
+        ''
+        'echo "# END SECTION"',
+    ]),
+))@
+@(SNIPPET(
+    'builder_shell'
+    script = '\n'.join(
+        'echo "# BEGIN SECTION: Checkout and build previous version of the workspace"',
+        'echo "# END SECTION"',
+    ]),
+))@
+@(SNIPPET(
+    'builder_shell'
+    script = '\n'.join(
+        'echo "# BEGIN SECTION: Get ABI dump of previous version"',
+        'echo "# END SECTION"',
+    ]),
+))@
+@[end if]
 @(SNIPPET(
     'builder_shell',
     script='\n'.join([
