@@ -11,7 +11,7 @@
 # if there are more dependencies then the limit
 # the folding will generate exactly the number of lines as allowed by the limit
 import math
-max_lines = 80
+max_lines = 1
 fold_factor = 1.0 * len(dependencies) / max_lines
 # can be zero if no folding is necessary
 begin_entries_for_line = int(math.floor(fold_factor))
