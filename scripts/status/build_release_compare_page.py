@@ -41,7 +41,7 @@ def main(argv=sys.argv[1:]):
     build_release_compare_page(
         args.config_url, args.older_rosdistro_names + [args.rosdistro_name],
         args.output_dir, copy_resources=args.copy_resources)
-    # If more than one older distro, generate a one-to-one comparison for each older rosdistro.
+    # generate a one-to-one comparison for each older rosdistro
     if len(args.older_rosdistro_names) > 1:
         for older_rosdistro_name in args.older_rosdistro_names:
             build_release_compare_page(
