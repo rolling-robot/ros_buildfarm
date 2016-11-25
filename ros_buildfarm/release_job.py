@@ -358,6 +358,49 @@ def configure_release_job(
         dry_run=False):
     """
     Configure a Jenkins release job.
+    """
+
+    if os_name != "arch":
+        return configure_debian_release_job(
+            config_url, rosdistro_name, release_build_name,
+            pkg_name, os_name, os_code_name,
+            config, build_file,
+            index, dist_file, dist_cache,
+            jenkins, views,
+            generate_import_package_job,
+            generate_sync_packages_jobs,
+            is_disabled, other_build_files_same_platform,
+            groovy_script,
+            filter_arches,
+            dry_run)
+    else:
+        return configure_arch_release_job(
+            config_url, rosdistro_name, release_build_name,
+            pkg_name, os_name, os_code_name,
+            config, build_file,
+            index, dist_file, dist_cache,
+            jenkins, views,
+            generate_import_package_job,
+            generate_sync_packages_jobs,
+            is_disabled, other_build_files_same_platform,
+            groovy_script,
+            filter_arches,
+            dry_run)
+
+def configure_debian_release_job(
+        config_url, rosdistro_name, release_build_name,
+        pkg_name, os_name, os_code_name,
+        config=None, build_file=None,
+        index=None, dist_file=None, dist_cache=None,
+        jenkins=None, views=None,
+        generate_import_package_job=True,
+        generate_sync_packages_jobs=True,
+        is_disabled=False, other_build_files_same_platform=None,
+        groovy_script=None,
+        filter_arches=None,
+        dry_run=False):
+    """
+    Configure a Jenkins release job.
 
     The following jobs are created for each package:
     - M source jobs, one for each OS node name
@@ -515,6 +558,144 @@ def configure_release_job(
 
     return source_job_names, binary_job_names, job_configs
 
+def configure_arch_release_job(
+        config_url, rosdistro_name, release_build_name,
+        pkg_name, os_name, os_code_name,
+        config=None, build_file=None,
+        index=None, dist_file=None, dist_cache=None,
+        jenkins=None, views=None,
+        generate_import_package_job=True,
+        generate_sync_packages_jobs=True,
+        is_disabled=False, other_build_files_same_platform=None,
+        groovy_script=None,
+        filter_arches=None,
+        dry_run=False):
+    """
+    Configure a Jenkins release job.
+
+    The following jobs are created for each package:
+    - M * N binary jobs, one for each combination of OS code name and arch
+    """
+    if config is None:
+        config = get_config_index(config_url)
+    if build_file is None:
+        build_files = get_release_build_files(config, rosdistro_name)
+        build_file = build_files[release_build_name]
+
+    if index is None:
+        index = get_index(config.rosdistro_index_url)
+    if dist_file is None:
+        dist_file = get_distribution_file(index, rosdistro_name, build_file)
+        if not dist_file:
+            raise JobValidationError(
+                'No distribution file matches the build file')
+
+    pkg_names = dist_file.release_packages.keys()
+
+    if pkg_name not in pkg_names:
+        raise JobValidationError(
+            "Invalid package name '%s' " % pkg_name +
+            'choose one of the following: ' + ', '.join(sorted(pkg_names)))
+
+    pkg = dist_file.release_packages[pkg_name]
+    repo_name = pkg.repository_name
+    repo = dist_file.repositories[repo_name]
+
+    if not repo.release_repository:
+        raise JobValidationError(
+            "Repository '%s' has no release section" % repo_name)
+
+    if not repo.release_repository.version:
+        raise JobValidationError(
+            "Repository '%s' has no release version" % repo_name)
+
+    if os_name not in build_file.targets.keys():
+        raise JobValidationError(
+            "Invalid OS name '%s' " % os_name +
+            'choose one of the following: ' +
+            ', '.join(sorted(build_file.targets.keys())))
+
+    if os_code_name not in build_file.targets[os_name].keys():
+        raise JobValidationError(
+            "Invalid OS code name '%s' " % os_code_name +
+            'choose one of the following: ' +
+            ', '.join(sorted(build_file.targets[os_name].keys())))
+
+    if dist_cache is None and \
+            (build_file.notify_maintainers or
+             build_file.abi_incompatibility_assumed):
+        dist_cache = get_distribution_cache(index, rosdistro_name)
+    if jenkins is None:
+        jenkins = connect(config.jenkins_url)
+    if views is None:
+        targets = []
+        for arch in build_file.targets[os_name][os_code_name]:
+            targets.append((os_name, os_code_name, arch))
+        configure_release_views(
+            jenkins, rosdistro_name, release_build_name, targets,
+            dry_run=dry_run)
+
+    if generate_import_package_job:
+        configure_import_package_job(
+            config_url, rosdistro_name, release_build_name,
+            config=config, build_file=build_file, jenkins=jenkins,
+            dry_run=dry_run)
+
+    #if generate_sync_packages_jobs:
+    #    configure_sync_packages_to_main_job(
+    #        config_url, rosdistro_name, release_build_name,
+    #        config=config, build_file=build_file, jenkins=jenkins,
+    #        dry_run=dry_run)
+    #    for arch in build_file.targets[os_name][os_code_name]:
+    #        configure_sync_packages_to_testing_job(
+    #            config_url, rosdistro_name, release_build_name,
+    #            os_code_name, arch,
+    #            config=config, build_file=build_file, jenkins=jenkins,
+    #            dry_run=dry_run)
+
+    binary_job_names = []
+    job_configs = {}
+
+    dependency_names = []
+    if build_file.abi_incompatibility_assumed:
+        dependency_names = _get_direct_dependencies(
+            pkg_name, dist_cache, pkg_names)
+        # if dependencies are not yet available in rosdistro cache
+        # skip binary jobs
+        if dependency_names is None:
+            print(("Skipping binary jobs for package '%s' because it is not " +
+                   "yet in the rosdistro cache") % pkg_name, file=sys.stderr)
+            return [], binary_job_names, job_configs
+
+    # binary jobs
+    for arch in build_file.targets[os_name][os_code_name]:
+        if filter_arches and arch not in filter_arches:
+            continue
+
+        job_name = get_binarydeb_job_name(
+            rosdistro_name, release_build_name,
+            pkg_name, os_name, os_code_name, arch)
+
+        upstream_job_names = [
+            get_binarydeb_job_name(
+                rosdistro_name, release_build_name,
+                dependency_name, os_name, os_code_name, arch)
+            for dependency_name in dependency_names]
+
+        job_config = _get_binary_archlinux_job_config(
+            config_url, rosdistro_name, release_build_name,
+            config, build_file, os_name, os_code_name, arch,
+            pkg_name, repo_name, repo.release_repository,
+            dist_cache=dist_cache, upstream_job_names=upstream_job_names,
+            is_disabled=is_disabled)
+        # jenkinsapi.jenkins.Jenkins evaluates to false if job count is zero
+        if isinstance(jenkins, object) and jenkins is not False:
+            configure_job(jenkins, job_name, job_config, dry_run=dry_run)
+        binary_job_names.append(job_name)
+        job_configs[job_name] = job_config
+
+    return [], binary_job_names, job_configs
+
 
 def configure_release_views(
         jenkins, rosdistro_name, release_build_name, targets, dry_run=False):
@@ -648,6 +829,78 @@ def _get_binarydeb_job_config(
         get_repositories_and_script_generating_key_files(build_file=build_file)
     repository_args.append(
         '--target-repository ' + build_file.target_repository)
+
+    binarydeb_files = [
+        'binarydeb/*.changes',
+        'binarydeb/*.deb',
+    ]
+
+    sync_to_testing_job_name = [get_sync_packages_to_testing_job_name(
+        rosdistro_name, os_code_name, arch)]
+
+    maintainer_emails = _get_maintainer_emails(dist_cache, pkg_name) \
+        if build_file.notify_maintainers \
+        else set([])
+
+    job_data = {
+        'github_url': get_github_project_url(release_repository.url),
+
+        'job_priority': build_file.jenkins_binary_job_priority,
+        'node_label': get_node_label(
+            build_file.jenkins_binary_job_label,
+            get_default_node_label('%s_%s_%s' % (
+                rosdistro_name, 'binarydeb', release_build_name))),
+
+        'disabled': is_disabled,
+
+        'upstream_projects': upstream_job_names,
+
+        'ros_buildfarm_repository': get_repository(),
+
+        'script_generating_key_files': script_generating_key_files,
+
+        'rosdistro_index_url': config.rosdistro_index_url,
+        'rosdistro_name': rosdistro_name,
+        'release_build_name': release_build_name,
+        'pkg_name': pkg_name,
+        'os_name': os_name,
+        'os_code_name': os_code_name,
+        'arch': arch,
+        'repository_args': repository_args,
+
+        'append_timestamp': build_file.abi_incompatibility_assumed,
+
+        'binarydeb_files': binarydeb_files,
+
+        'import_package_job_name': get_import_package_job_name(rosdistro_name),
+        'debian_package_name': get_debian_package_name(
+            rosdistro_name, pkg_name),
+
+        'child_projects': sync_to_testing_job_name,
+
+        'notify_emails': build_file.notify_emails,
+        'maintainer_emails': maintainer_emails,
+        'notify_maintainers': build_file.notify_maintainers,
+
+        'timeout_minutes': build_file.jenkins_binary_job_timeout,
+
+        'credential_id': build_file.upload_credential_id,
+    }
+    job_config = expand_template(template_name, job_data)
+    return job_config
+
+def _get_binary_archlinux_job_config(
+        config_url, rosdistro_name, release_build_name,
+        config, build_file, os_name, os_code_name, arch,
+        pkg_name, repo_name, release_repository,
+        dist_cache=None, upstream_job_names=None,
+        is_disabled=False):
+    template_name = 'release/binary_archlinux_job.xml.em'
+
+    repository_args, script_generating_key_files = \
+        get_repositories_and_script_generating_key_files(build_file=build_file, os_name="arch")
+    repository_args.append(
+        '--target-repository ' + build_file.archlinux_target_repository)
 
     binarydeb_files = [
         'binarydeb/*.changes',

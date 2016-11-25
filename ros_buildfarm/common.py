@@ -51,7 +51,7 @@ Target = namedtuple('Target', 'os_name os_code_name arch')
 
 
 def get_repositories_and_script_generating_key_files(
-        config=None, build_file=None):
+        config=None, build_file=None, os_name=None):
     # extract the distribution repository urls and keys from the build file
     # and pass them as command line arguments and files
     # so that the job must not parse the build file
@@ -60,17 +60,27 @@ def get_repositories_and_script_generating_key_files(
     custom_rosdep_urls = []
 
     if config:
-        if 'debian_repositories' in config.prerequisites:
-            repository_urls += config.prerequisites['debian_repositories']
-        if 'debian_repository_keys' in config.prerequisites:
-            repository_keys += config.prerequisites['debian_repository_keys']
+        if os_name != "arch":
+            if 'debian_repositories' in config.prerequisites:
+                repository_urls += config.prerequisites['debian_repositories']
+            if 'debian_repository_keys' in config.prerequisites:
+                repository_keys += config.prerequisites['debian_repository_keys']
+        else:
+            if 'archlinux_repositories' in config.prerequisites:
+                repository_urls += config.prerequisites['archlinux_repositories']
+            if 'archlinux_repository_keys' in config.prerequisites:
+                repository_keys += config.prerequisites['archlinux_repository_keys']
         assert len(repository_urls) == len(repository_keys)
 
     if build_file:
         assert len(build_file.repository_urls) == \
             len(build_file.repository_keys)
-        repository_urls += build_file.repository_urls
-        repository_keys += build_file.repository_keys
+        if os_name != 'arch':
+            repository_urls += build_file.repository_urls
+            repository_keys += build_file.repository_keys
+        else:
+            repository_urls += build_file.archlinux_repository_urls
+            repository_keys += build_file.archlinux_repository_keys
         if hasattr(build_file, 'custom_rosdep_urls'):
             custom_rosdep_urls += build_file.custom_rosdep_urls
 

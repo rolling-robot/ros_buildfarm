@@ -38,6 +38,14 @@ class BuildFile(object):
                 self.repository_urls = data['repositories']['urls']
                 assert isinstance(self.repository_urls, list)
             assert len(self.repository_keys) == len(self.repository_urls)
+        if 'archlinux_repositories' in data:
+            if 'keys' in data['archlinux_repositories']:
+                self.archlinux_repository_keys = data['archlinux_repositories']['keys']
+                assert isinstance(self.repository_keys, list)
+            if 'urls' in data['repositories']:
+                self.archlinux_repository_urls = data['archlinux_repositories']['urls']
+                assert isinstance(self.archlinux_repository_urls, list)
+            assert len(self.archlinux_repository_keys) == len(self.archlinux_repository_urls)
 
         self.tag_whitelist = []
         self.tag_blacklist = []

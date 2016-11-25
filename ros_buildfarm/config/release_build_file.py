@@ -94,6 +94,8 @@ class ReleaseBuildFile(BuildFile):
             self.target_queue = str(data['target_queue'])
         assert 'target_repository' in data
         self.target_repository = data['target_repository']
+        assert 'archlinux_target_repository' in data
+        self.archlinux_target_repository = data['archlinux_target_repository']
 
         assert 'upload_credential_id' in data
         self.upload_credential_id = data['upload_credential_id']
