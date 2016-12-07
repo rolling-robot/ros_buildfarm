@@ -32,6 +32,7 @@ from ros_buildfarm.argument import add_argument_rosdistro_index_url
 from ros_buildfarm.argument import add_argument_rosdistro_name
 from ros_buildfarm.argument import add_argument_skip_download_sourcedeb
 from ros_buildfarm.argument import add_argument_target_repository
+from ros_buildfarm.argument import add_argument_download_arch_prerequisite
 from ros_buildfarm.common import get_distribution_repository_keys
 from ros_buildfarm.common import get_user_id
 from ros_buildfarm.templates import create_dockerfile
@@ -53,6 +54,7 @@ def main(argv=sys.argv[1:]):
     add_argument_dockerfile_dir(parser)
     add_argument_skip_download_sourcedeb(parser)
     add_argument_append_timestamp(parser)
+    add_argument_download_arch_prerequisite(parser)
     args = parser.parse_args(argv)
 
     data = copy.deepcopy(args.__dict__)
@@ -66,6 +68,7 @@ def main(argv=sys.argv[1:]):
         'target_repository': args.target_repository,
 
         'skip_download_sourcedeb': args.skip_download_sourcedeb,
+        'download_arch_prerequisite': args.download_arch_prerequisite,
 
         'binarydeb_dir': '/tmp/binary_archlinux',
         'dockerfile_dir': '/tmp/docker_build_binary_archlinux',

@@ -54,7 +54,12 @@ ENTRYPOINT ["sh", "-c"]
 cmds = [
 ]
 
-if not skip_download_sourcedeb:
+if download_arch_prerequisite:
+    cmds = [
+        'git clone --branch rosarch --depth 1 --no-single-branch https://github.com/ros-archlinux/'+package_name+'.git ' + binarydeb_dir
+        ]
+
+elif not skip_download_sourcedeb:
     cmds = [
         'PYTHONPATH=/tmp/ros_buildfarm:$PYTHONPATH python3 -u' +
         ' /tmp/ros_buildfarm/scripts/release/get_sources.py' +

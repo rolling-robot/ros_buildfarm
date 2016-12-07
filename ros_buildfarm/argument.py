@@ -120,6 +120,12 @@ def add_argument_skip_download_sourcedeb(parser):
         action='store_true',
         help='Skip downloading sourcedeb and expect it to be already there')
 
+def add_argument_download_arch_prerequisite(parser):
+    parser.add_argument(
+        '--download-arch-prerequisite',
+        action='store_true',
+        help='Treat the source URL has the URL of an Arch Linux prerequisite')
+
 
 def add_argument_append_timestamp(parser):
     parser.add_argument(

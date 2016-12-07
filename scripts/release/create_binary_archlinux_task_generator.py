@@ -20,9 +20,6 @@ import argparse
 import os
 import sys
 
-from rosdistro import get_distribution_file
-from rosdistro import get_index
-
 from ros_buildfarm.argument import add_argument_arch
 from ros_buildfarm.argument import add_argument_binarydeb_dir
 from ros_buildfarm.argument import \
@@ -56,16 +53,6 @@ def main(argv=sys.argv[1:]):
 
     debian_package_name = get_debian_package_name(
         args.rosdistro_name, args.package_name)
-
-    # get expected package version from rosdistro
-    index = get_index(args.rosdistro_index_url)
-    dist_file = get_distribution_file(index, args.rosdistro_name)
-    assert args.package_name in dist_file.release_packages
-    pkg = dist_file.release_packages[args.package_name]
-    repo = dist_file.repositories[pkg.repository_name]
-    package_version = repo.release_repository.version
-
-    debian_package_version = package_version
 
     # find PKGBUILD dependencies
     pkgbuild_proc = subprocess.Popen(["/bin/bash","-c","source  PKGBUILD ;  echo $(printf \"'%s' \" \"${makedepends[@]}\") $(printf \"'%s' \" \"${depends[@]}\")"], stdout=subprocess.PIPE)
