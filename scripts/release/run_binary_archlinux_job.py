@@ -68,7 +68,7 @@ def main(argv=sys.argv[1:]):
         'target_repository': args.target_repository,
 
         'skip_download_sourcedeb': args.skip_download_sourcedeb,
-        'download_arch_prerequisite': args.download_arch_prerequisite,
+        'download_arch_prerequisite': True, #args.download_arch_prerequisite,
 
         'binarydeb_dir': '/tmp/binary_archlinux',
         'dockerfile_dir': '/tmp/docker_build_binary_archlinux',
